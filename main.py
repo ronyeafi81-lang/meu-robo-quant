@@ -17,7 +17,8 @@ def enviar_alerta_telegram(mensagem):
     """Função automática que dispara o alerta para o Telegram"""
     try:
         url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-        payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
+        payload = {"chat_id": ID_TELEGRAM, "text": message, "parse_mode": "Markdown"} # Mantido a estrutura padrão solicitada anteriormente
+        payload["text"] = mensagem # Garante a correção interna da variável
         requests.post(url, json=payload)
         time.sleep(1.2)
     except Exception as e:
@@ -26,7 +27,7 @@ def enviar_alerta_telegram(mensagem):
 # 1. Configuração de Tela Cheia e Tema do App
 st.set_page_config(page_title="Terminal Quant - Alertas Automáticos", layout="wide")
 st.title("🛡️ Terminal Quantitativo Avançado")
-st.caption("Scanner de setups com atualização automática e alertas no Telegram.")
+st.caption("Scanner das principais ações da B3 com atualização automática e alertas no Telegram.")
 
 # =====================================================================
 # MECANISMO DE ATUALIZAÇÃO AUTOMÁTICA (Roda o código sozinho a cada 5 min)
@@ -36,6 +37,7 @@ if "alertas_enviados" not in st.session_state:
 
 @st.fragment(run_every=300)
 def loop_principal():
+    # CARTEIRA PARCIAL/PRINCIPAL DO IBOVESPA (Evita travamentos por excesso de requisições)
     carteira = [
         "ABEV3.SA", "ALOS3.SA", "ALPA4.SA", "ARZZ3.SA", "ASAI3.SA", "AZUL4.SA", "B3SA3.SA", 
         "BBAS3.SA", "BBDC3.SA", "BBDC4.SA", "BBSE3.SA", "BEEF3.SA", "BPAC11.SA", "BRAP4.SA", 
@@ -49,14 +51,20 @@ def loop_principal():
         "RENT3.SA", "RRRP3.SA", "SANB11.SA", "SBSPSP3.SA", "SUZB3.SA", "TAEE11.SA", "TIMS3.SA", 
         "TOTS3.SA", "TRPL4.SA", "UGPA3.SA", "USIM5.SA", "VALE3.SA", "VAMO3.SA", "VBBR3.SA", 
         "VIVA3.SA", "WEGE3.SA", "YDUQ3.SA"
+    ]
+    
     resultados = []
     dados_acoes = {}
 
-    # Força a limpeza para trazer preços novos do yfinance a cada 5 minutos
     st.cache_data.clear()
 
-    for ticker in carteira:
+    # Barra de progresso para acompanhar o carregamento das ~80 ações
+    progresso = st.progress(0, text="Processando mercado B3...")
+    total_ativos = len(carteira)
+
+    for idx, ticker in enumerate(carteira):
         try:
+            progresso.progress((idx + 1) / total_ativos, text=f"Analisando: {ticker}")
             acao = yf.Ticker(ticker)
             df = acao.history(period="300d")
             if len(df) < 200:
@@ -146,15 +154,17 @@ def loop_principal():
         except Exception as e:
             pass
 
+    progresso.empty() # Limpa a barra quando termina
+
     # --- VISUALIZAÇÃO INTERNA ---
-    st.subheader("📋 Matriz Quantitativa")
-    st.dataframe(resultados)
+    st.subheader("📋 Matriz Quantitativa B3")
+    st.dataframe(resultados, use_container_width=True)
 
     st.markdown("---")
     st.subheader("📊 Gráfico Técnico (4 Médias Móveis)")
 
     if resultados:
-        acao_selecionada = st.selectbox("Selecione a Ação:", [r["Acao"] for r in resultados])
+        acao_selecionada = st.selectbox("Selecione a Ação para Analisar:", [r["Acao"] for r in resultados])
         ticker_completo = acao_selecionada + ".SA"
 
         if ticker_completo in dados_acoes:
@@ -175,4 +185,4 @@ def loop_principal():
 
 # Executa o loop estável
 loop_principal()
-st.success("Monitoramento ativo na nuvem! O painel se atualiza sozinho a cada 5 minutos.")
+st.success("Scanner completo ativo! Monitorando e atualizando a cada 5 minutos.")
