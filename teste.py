@@ -17,7 +17,7 @@ def enviar_alerta_telegram(mensagem):
     """Função automática que dispara o alerta para o Telegram"""
     try:
         url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-        payload = {"chat_id": 971501251, "text": message, "parse_mode": "Markdown"}
+         payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
         requests.post(url, json=payload)
         time.sleep(1.2)
     except Exception as e:
