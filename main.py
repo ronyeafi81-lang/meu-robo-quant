@@ -36,7 +36,19 @@ if "alertas_enviados" not in st.session_state:
 
 @st.fragment(run_every=300)
 def loop_principal():
-    carteira = ["PETR4.SA", "VALE3.SA", "ITUB4.SA", "MGLU3.SA", "BBAS3.SA", "BBDC4.SA"]
+    carteira = [
+        "ABEV3.SA", "ALOS3.SA", "ALPA4.SA", "ARZZ3.SA", "ASAI3.SA", "AZUL4.SA", "B3SA3.SA", 
+        "BBAS3.SA", "BBDC3.SA", "BBDC4.SA", "BBSE3.SA", "BEEF3.SA", "BPAC11.SA", "BRAP4.SA", 
+        "BRCR11.SA", "BRFS3.SA", "BRKM5.SA", "CCRO3.SA", "CIEL3.SA", "CMIG4.SA", "CMIN3.SA", 
+        "COGN3.SA", "CPFE3.SA", "CPLE6.SA", "CRFB3.SA", "CSAN3.SA", "CSNA3.SA", "CYRE3.SA", 
+        "DIRR3.SA", "DXCO3.SA", "ELET3.SA", "ELET6.SA", "EMBR3.SA", "ENEV3.SA", "ENGI11.SA", 
+        "EQTL3.SA", "EZTC3.SA", "FLRY3.SA", "GGBR4.SA", "GOAU4.SA", "GOLL4.SA", "HAPV3.SA", 
+        "HYPE3.SA", "IGTI11.SA", "IRBR3.SA", "ITSA4.SA", "ITUB4.SA", "JBSS3.SA", "KLBN11.SA", 
+        "LREN3.SA", "LWSA3.SA", "MGLU3.SA", "MRFG3.SA", "MRVE3.SA", "MULT3.SA", "NTCO3.SA", 
+        "PCAR3.SA", "PETR3.SA", "PETR4.SA", "RECV3.SA", "RAIL3.SA", "RADL3.SA", "RAIZ4.SA", 
+        "RENT3.SA", "RRRP3.SA", "SANB11.SA", "SBSPSP3.SA", "SUZB3.SA", "TAEE11.SA", "TIMS3.SA", 
+        "TOTS3.SA", "TRPL4.SA", "UGPA3.SA", "USIM5.SA", "VALE3.SA", "VAMO3.SA", "VBBR3.SA", 
+        "VIVA3.SA", "WEGE3.SA", "YDUQ3.SA"
     resultados = []
     dados_acoes = {}
 
