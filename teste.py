@@ -17,7 +17,7 @@ def enviar_alerta_telegram(mensagem):
     """Função automática que dispara o alerta para o Telegram"""
     try:
         url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-         payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
+        payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
         requests.post(url, json=payload)
         time.sleep(1.2)
     except Exception as e:
@@ -31,16 +31,16 @@ st.caption("Scanner de setups com atualização automática e alertas no Telegra
 # =====================================================================
 # MECANISMO DE ATUALIZAÇÃO AUTOMÁTICA (Roda o código sozinho a cada 5 min)
 # =====================================================================
+if "alertas_enviados" not in st.session_state:
+    st.session_state.alertas_enviados = {}
+
 @st.fragment(run_every=300)
 def loop_principal():
     carteira = ["PETR4.SA", "VALE3.SA", "ITUB4.SA", "MGLU3.SA", "BBAS3.SA", "BBDC4.SA"]
     resultados = []
     dados_acoes = {}
 
-    if "alertas_enviados" not in st.session_state:
-        st.session_state.alertas_enviados = {}
-
-    # Força o yfinance a buscar dados novos da B3 a cada ciclo
+    # Força a limpeza para trazer preços novos do yfinance a cada 5 minutos
     st.cache_data.clear()
 
     for ticker in carteira:
@@ -98,7 +98,7 @@ def loop_principal():
             elif mme9[-1] < mme9[-2]:
                 if c[-1] > c[-2] and c[-1] > o[-1]:
                     sinal_setup = "🔍 9.2/9.3 Armado (Venda)"
-                    
+                
             if sinal_setup == "Aguardando Padrão":
                 if c[-1] > mma21[-1] and l[-1] <= mma21[-1] and mma21[-1] > mma21[-2]:
                     sinal_setup = "🎯 PC COMPRA"
@@ -117,7 +117,7 @@ def loop_principal():
                         f"💰 Preço: R$ {ultimo_preço:.2f}\n"
                         f"📊 Setup: {sinal_setup}\n"
                         f"🔥 IV Rank: {iv_rank:.1f}%\n\n"
-                        f"🤖 Notificação enviada automaticamente pelo seu robô."
+                        f"🤖 Notificação enviada automaticamente pela nuvem."
                     )
                     enviar_alerta_telegram(msg)
                     st.session_state.alertas_enviados[chave_alerta] = True
@@ -134,7 +134,7 @@ def loop_principal():
         except Exception as e:
             pass
 
-    # --- VISUALIZAÇÃO INTERNA DO FRAGMENT ---
+    # --- VISUALIZAÇÃO INTERNA ---
     st.subheader("📋 Matriz Quantitativa")
     st.dataframe(resultados)
 
@@ -161,6 +161,6 @@ def loop_principal():
             fig.update_layout(xaxis_rangeslider_visible=False, template="plotly_dark")
             st.plotly_chart(fig, use_container_width=True)
 
-# Executa o loop
+# Executa o loop estável
 loop_principal()
-st.success("Monitoramento ativo. O painel se atualiza sozinho a cada 5 minutos!")
+st.success("Monitoramento ativo na nuvem! O painel se atualiza sozinho a cada 5 minutos.")
