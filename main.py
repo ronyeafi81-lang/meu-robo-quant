@@ -17,8 +17,7 @@ def enviar_alerta_telegram(mensagem):
     """Função automática que dispara o alerta para o Telegram"""
     try:
         url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-        payload = {"chat_id": ID_TELEGRAM, "text": message, "parse_mode": "Markdown"} # Mantido a estrutura padrão solicitada anteriormente
-        payload["text"] = mensagem # Garante a correção interna da variável
+        payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
         requests.post(url, json=payload)
         time.sleep(1.2)
     except Exception as e:
@@ -37,7 +36,6 @@ if "alertas_enviados" not in st.session_state:
 
 @st.fragment(run_every=300)
 def loop_principal():
-    # CARTEIRA PARCIAL/PRINCIPAL DO IBOVESPA (Evita travamentos por excesso de requisições)
     carteira = [
         "ABEV3.SA", "ALOS3.SA", "ALPA4.SA", "ARZZ3.SA", "ASAI3.SA", "AZUL4.SA", "B3SA3.SA", 
         "BBAS3.SA", "BBDC3.SA", "BBDC4.SA", "BBSE3.SA", "BEEF3.SA", "BPAC11.SA", "BRAP4.SA", 
@@ -58,7 +56,6 @@ def loop_principal():
 
     st.cache_data.clear()
 
-    # Barra de progresso para acompanhar o carregamento das ~80 ações
     progresso = st.progress(0, text="Processando mercado B3...")
     total_ativos = len(carteira)
 
@@ -66,8 +63,8 @@ def loop_principal():
         try:
             progresso.progress((idx + 1) / total_ativos, text=f"Analisando: {ticker}")
             acao = yf.Ticker(ticker)
-            df = acao.history(period="300d")
-            if len(df) < 200:
+            df = acao.history(period="350d") # Puxa um pouco mais de dias para garantir 252 cheios após cálculos
+            if len(df) < 252:
                 continue
             dados_acoes[ticker] = df
             
@@ -79,24 +76,32 @@ def loop_principal():
             
             ultimo_preço = df['Close'].iloc[-1]
             
-            # --- DIMENSÕES DE VOLATILIDADE ---
+            # --- CÁLCULO DA VOLATILIDADE HISTÓRICA (Aproximação para IV) ---
             df['Retornos'] = df['Close'].pct_change()
-            vol_historica_21d = df['Retornos'].tail(21).std() * np.sqrt(252) * 100
-            vol_implicita_est = df['Retornos'].tail(30).std() * np.sqrt(252) * 1.15 * 100
             
-            df['HV_Anualizada'] = df['Retornos'].rolling(window=21).std() * np.sqrt(252) * 100
-            historico_hvs = df['HV_Anualizada'].tail(252).dropna()
+            # Janela móvel de 21 dias anualizada para gerar o histórico de volatilidade
+            df['Vol_21d'] = df['Retornos'].rolling(window=21).std() * np.sqrt(252) * 100
             
-            min_hv = historico_hvs.min()
-            max_hv = historico_hvs.max()
-            atual_hv = vol_historica_21d
+            # Pegamos exatamente os últimos 252 dias úteis para a análise técnica do IV
+            historico_vol = df['Vol_21d'].tail(252).dropna()
             
-            if max_hv != min_hv:
-                iv_rank = ((atual_hv - min_hv) / (max_hv - min_hv)) * 100
+            if len(historico_vol) < 200:
+                continue
+                
+            iv_atual = historico_vol.iloc[-1]
+            iv_minimo = historico_vol.min()
+            iv_maximo = historico_vol.max()
+            
+            # --- NOVO CÁLCULO: IV RANK ---
+            if iv_maximo != iv_minimo:
+                iv_rank = ((iv_atual - iv_minimo) / (iv_maximo - iv_minimo)) * 100
             else:
                 iv_rank = 0.0
                 
-            iv_percentil = (historico_hvs < atual_hv).sum() / len(historico_hvs) * 100
+            # --- NOVO CÁLCULO: IV PERCENTIL ---
+            # Conta quantos dias dos últimos 252 a volatilidade foi menor que a atual
+            dias_menores = (historico_vol < iv_atual).sum()
+            iv_percentil = (dias_menores / 252) * 100
             
             # --- SCANNER DE SETUPS TÉCNICOS ---
             sinal_setup = "Aguardando Padrão"
@@ -136,7 +141,8 @@ def loop_principal():
                         f"🔹 Ativo: {ticker_nome}\n"
                         f"💰 Preço: R$ {ultimo_preço:.2f}\n"
                         f"📊 Setup: {sinal_setup}\n"
-                        f"🔥 IV Rank: {iv_rank:.1f}%\n\n"
+                        f"🔥 IV Rank: {iv_rank:.1f}%\n"
+                        f"📈 IV Percentil: {iv_percentil:.1f}%\n\n"
                         f"🤖 Notificação enviada automaticamente pela nuvem."
                     )
                     enviar_alerta_telegram(msg)
@@ -145,8 +151,7 @@ def loop_principal():
             resultados.append({
                 "Acao": ticker_nome,
                 "Preco": f"R$ {ultimo_preço:.2f}",
-                "Vol.Historica": f"{vol_historica_21d:.1f}%",
-                "Vol.Implicita": f"{vol_implicita_est:.1f}%",
+                "Vol.Atual": f"{iv_atual:.1f}%",
                 "IV Rank": f"{iv_rank:.1f}%",
                 "IV Percentil": f"{iv_percentil:.1f}%",
                 "Setup": sinal_setup
@@ -154,7 +159,7 @@ def loop_principal():
         except Exception as e:
             pass
 
-    progresso.empty() # Limpa a barra quando termina
+    progresso.empty()
 
     # --- VISUALIZAÇÃO INTERNA ---
     st.subheader("📋 Matriz Quantitativa B3")
@@ -185,4 +190,4 @@ def loop_principal():
 
 # Executa o loop estável
 loop_principal()
-st.success("Scanner completo ativo! Monitorando e atualizando a cada 5 minutos.")
+st.success("Scanner atualizado com novos cálculos de IV e ativo de 5 em 5 minutos!")
