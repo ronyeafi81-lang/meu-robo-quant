@@ -7,54 +7,50 @@ import requests
 import time
 
 # =====================================================================
-# CONFIGURAÇÃO DO TELEGRAM (INSIRA SEUS DADOS REAIS ABAIXO)
+# CONFIGURAÇÃO DO TELEGRAM
 # =====================================================================
-TOKEN_TELEGRAM = "8811939851:AAFK5KsKWEzfn2vU7WuHtKYi4gMi8hsbGpA"
-ID_TELEGRAM = "971501251"
+TOKEN_TELEGRAM = "8811939851:AAFK5KsKWEzfn2vU7WuHtK"  # Atualizado conforme seu print
+ID_TELEGRAM = "971501251"                             # Atualizado conforme seu print
 # =====================================================================
 
 def enviar_alerta_telegram(mensagem):
     """Função automática que dispara o alerta para o Telegram"""
     try:
         url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-        payload = {"chat_id": ID_TELEGRAM, "text": message, "parse_mode": "Markdown"} # Mantido a estrutura padrão solicitada anteriormente
-        payload["text"] = mensagem # Garante a correção interna da variável
+        payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
         requests.post(url, json=payload)
         time.sleep(1.2)
     except Exception as e:
         pass
 
-# 1. Configuração de Tela Cheia e Tema do App
-st.set_page_config(page_title="Terminal Quant - Scanner de Opções", layout="wide")
-st.title("🛡️ Terminal Quantitativo & Scanner de Opções")
-st.caption("Filtros automáticos baseados em IV Rank e Setups Técnicos para montagem de estratégias de Opções na B3.")
+# Configuração de Tela Cheia e Tema do App
+st.set_page_config(page_title="Terminal Quant - Scanner & Checklist", layout="wide")
+st.title("🛡️ Terminal Quantitativo & Validador de Opções")
+st.caption("Filtros automáticos baseados em IV Rank/Setups e Checklist de Gestão de Risco Profissional.")
 
-# =====================================================================
-# MECANISMO DE ATUALIZAÇÃO AUTOMÁTICA (Roda o código sozinho a cada 5 min)
-# =====================================================================
+# Mecanismo de estado para controle de alertas
 if "alertas_enviados" not in st.session_state:
     st.session_state.alertas_enviados = {}
 
 @st.fragment(run_every=300)
 def loop_principal():
+    # Tickers limpos e corrigidos com ".sa" minúsculo para evitar erros no Yahoo Finance
     carteira = [
-        "ABEV3.SA", "ALOS3.SA", "ALPA4.SA", "ARZZ3.SA", "ASAI3.SA", "AZUL4.SA", "B3SA3.SA", 
-        "BBAS3.SA", "BBDC3.SA", "BBDC4.SA", "BBSE3.SA", "BEEF3.SA", "BPAC11.SA", "BRAP4.SA", 
-        "BRCR11.SA", "BRFS3.SA", "BRKM5.SA", "CCRO3.SA", "CIEL3.SA", "CMIG4.SA", "CMIN3.SA", 
-        "COGN3.SA", "CPFE3.SA", "CPLE6.SA", "CRFB3.SA", "CSAN3.SA", "CSNA3.SA", "CYRE3.SA", 
-        "DIRR3.SA", "DXCO3.SA", "ELET3.SA", "ELET6.SA", "EMBR3.SA", "ENEV3.SA", "ENGI11.SA", 
-        "EQTL3.SA", "EZTC3.SA", "FLRY3.SA", "GGBR4.SA", "GOAU4.SA", "GOLL4.SA", "HAPV3.SA", 
-        "HYPE3.SA", "IGTI11.SA", "IRBR3.SA", "ITSA4.SA", "ITUB4.SA", "JBSS3.SA", "KLBN11.SA", 
-        "LREN3.SA", "LWSA3.SA", "MGLU3.SA", "MRFG3.SA", "MRVE3.SA", "MULT3.SA", "NTCO3.SA", 
-        "PCAR3.SA", "PETR3.SA", "PETR4.SA", "RECV3.SA", "RAIL3.SA", "RADL3.SA", "RAIZ4.SA", 
-        "RENT3.SA", "RRRP3.SA", "SANB11.SA", "SBSPSP3.SA", "SUZB3.SA", "TAEE11.SA", "TIMS3.SA", 
-        "TOTS3.SA", "TRPL4.SA", "UGPA3.SA", "USIM5.SA", "VALE3.SA", "VAMO3.SA", "VBBR3.SA", 
-        "VIVA3.SA", "WEGE3.SA", "YDUQ3.SA"
+        "abev3.sa", "alos3.sa", "alpa4.sa", "arzz3.sa", "asai3.sa", "azul4.sa", "b3sa3.sa", 
+        "bbas3.sa", "bbdc3.sa", "bbdc4.sa", "bbse3.sa", "beef3.sa", "bpac11.sa", "brap4.sa", 
+        "brfs3.sa", "brkm5.sa", "ccro3.sa", "cmig4.sa", "cmin3.sa", "cogn3.sa", "cpfe3.sa", 
+        "cple6.sa", "crfb3.sa", "csan3.sa", "csna3.sa", "cyre3.sa", "dirr3.sa", "dxco3.sa", 
+        "elet3.sa", "elet6.sa", "embr3.sa", "enev3.sa", "engi11.sa", "eqtl3.sa", "eztc3.sa", 
+        "flry3.sa", "ggbr4.sa", "goau4.sa", "hapv3.sa", "hype3.sa", "igti11.sa", "irbr3.sa", 
+        "itsa4.sa", "itub4.sa", "jbss3.sa", "klbn11.sa", "lren3.sa", "lwsa3.sa", "mglu3.sa", 
+        "mrfg3.sa", "mrve3.sa", "mult3.sa", "ntco3.sa", "pcar3.sa", "petr3.sa", "petr4.sa", 
+        "recv3.sa", "rail3.sa", "radl3.sa", "raiz4.sa", "rent3.sa", "sanb11.sa", "suzb3.sa", 
+        "taee11.sa", "tims3.sa", "tots3.sa", "trpl4.sa", "ugpa3.sa", "usim5.sa", "vale3.sa", 
+        "vamo3.sa", "vbbr3.sa", "viva3.sa", "wege3.sa", "yduq3.sa"
     ]
     
     resultados = []
     dados_acoes = {}
-
     st.cache_data.clear()
 
     progresso = st.progress(0, text="Escaneando mercado para Opções...")
@@ -62,7 +58,7 @@ def loop_principal():
 
     for idx, ticker in enumerate(carteira):
         try:
-            progresso.progress((idx + 1) / total_ativos, text=f"Analisando: {ticker}")
+            progresso.progress((idx + 1) / total_ativos, text=f"Analisando: {ticker.upper()}")
             acao = yf.Ticker(ticker)
             df = acao.history(period="350d")
             if len(df) < 252:
@@ -74,10 +70,9 @@ def loop_principal():
             df['MMA_21'] = df['Close'].rolling(window=21).mean()
             df['MMA_80'] = df['Close'].rolling(window=80).mean()
             df['MMA_200'] = df['Close'].rolling(window=200).mean()
-            
             ultimo_preço = df['Close'].iloc[-1]
             
-            # --- CÁLCULO DA VOLATILIDADE HISTÓRICA (BASE DO IV RANK) ---
+            # --- CÁLCULO DA VOLATILIDADE HISTÓRICA ---
             df['Retornos'] = df['Close'].pct_change()
             df['Vol_21d'] = df['Retornos'].rolling(window=21).std() * np.sqrt(252) * 100
             
@@ -89,13 +84,11 @@ def loop_principal():
             iv_minimo = historico_vol.min()
             iv_maximo = historico_vol.max()
             
-            # IV RANK FORMULA
             if iv_maximo != iv_minimo:
                 iv_rank = ((iv_atual - iv_minimo) / (iv_maximo - iv_minimo)) * 100
             else:
                 iv_rank = 0.0
                 
-            # IV PERCENTIL FORMULA
             dias_menores = (historico_vol < iv_atual).sum()
             iv_percentil = (dias_menores / 252) * 100
             
@@ -133,11 +126,10 @@ def loop_principal():
                     sinal_setup = "PC VENDA"
                     direcao_mercado = "Baixa"
 
-            # --- INTELIGÊNCIA ARTIFICIAL DE ESTRATÉGIAS DE OPÇÕES ---
+            # --- ESTRATÉGIAS ---
             estrategia_sugerida = "Aguardar Oportunidade"
             cor_alerta = "⚪"
 
-            # Cenário 1: Volatilidade Extremamente Alta (Ideal para Vender Opções / Crédito)
             if iv_rank >= 70:
                 if direcao_mercado == "Alta":
                     estrategia_sugerida = "💎 Trava de Alta com Put (Crédito) / Lançamento Coberto"
@@ -146,95 +138,130 @@ def loop_principal():
                     estrategia_sugerida = "💎 Trava de Baixa com Call (Crédito)"
                     cor_alerta = "🔴"
                 else:
-                    estrategia_sugerida = "💎 Venda de Volatilidade Neutra (Iron Condor / Straddle Vendido)"
+                    estrategia_sugerida = "💎 Venda Volatilidade (Iron Condor / Straddle Vendido)"
                     cor_alerta = "🔵"
-            
-            # Cenário 2: Volatilidade Extremamente Baixa (Ideal para Comprar Opções / Débito)
             elif iv_rank <= 25:
                 if direcao_mercado == "Alta":
-                    estrategia_sugerida = "⚡ Compra Seca de Call / Trava de Alta com Call (Débito)"
+                    estrategia_sugerida = "⚡ Compra Seca Call / Trava Alta Call (Débito)"
                     cor_alerta = "🟢"
                 elif direcao_mercado == "Baixa":
-                    estrategia_sugerida = "⚡ Compra Seca de Put / Trava de Baixa com Put (Débito)"
+                    estrategia_sugerida = "⚡ Compra Seca Put / Trava Baixa Put (Débito)"
                     cor_alerta = "🔴"
                 else:
-                    estrategia_sugerida = "⚡ Compra de Volatilidade Neutra (Straddle / Strangle Comprado)"
+                    estrategia_sugerida = "⚡ Compra Volatilidade (Straddle / Strangle Comprado)"
                     cor_alerta = "🔵"
-            
-            # Cenário 3: Volatilidade Média (Foco total no Direcional do Gráfico)
             else:
                 if direcao_mercado == "Alta":
-                    estrategia_sugerida = "📈 Call Spread (Trava de Alta) / Compra de Call"
+                    estrategia_sugerida = "📈 Call Spread (Trava de Alta) / Compra Call"
                     cor_alerta = "🟢"
                 elif direcao_mercado == "Baixa":
-                    estrategia_sugerida = "📉 Put Spread (Trava de Baixa) / Compra de Put"
+                    estrategia_sugerida = "📉 Put Spread (Trava de Baixa) / Compra Put"
                     cor_alerta = "🔴"
 
-            ticker_nome = ticker.replace('.SA', '')
-            
-            # --- DISPARO AUTOMÁTICO PARA TELEGRAM ---
-            if estrategia_sugerida != "Aguardar Oportunidade" and direcao_mercado != "Neutro":
-                chave_alerta = f"{ticker_nome}_{sinal_setup}_opt"
-                if chave_alerta not in st.session_state.alertas_enviados:
-                    msg = (
-                        f"🎯 OPORTUNIDADE DE OPÇÕES 🎯\n\n"
-                        f"🔹 Ativo Objeto: {ticker_nome}\n"
-                        f"💰 Preço da Ação: R$ {ultimo_preço:.2f}\n"
-                        f"🔥 IV Rank: {iv_rank:.1f}% | IV Percentil: {iv_percentil:.1f}%\n"
-                        f"📊 Setup Técnico: {sinal_setup}\n"
-                        f"🛠️ Estratégia Recomendada: {estrategia_sugerida}\n\n"
-                        f"🤖 Filtro quantitativo gerado automaticamente."
-                    )
-                    enviar_alerta_telegram(msg)
-                    st.session_state.alertas_enviados[chave_alerta] = True
+            ticker_nome = ticker.replace('.sa', '').upper()
 
             resultados.append({
                 "Sinal": cor_alerta,
                 "Acao (Ativo Objeto)": ticker_nome,
                 "Preco Atual": f"R$ {ultimo_preço:.2f}",
-                "IV Rank": f"{iv_rank:.1f}%",
-                "IV Percentil": f"{iv_percentil:.1f}%",
+                "IV Rank": iv_rank,
+                "IV Percentil": iv_percentil,
                 "Setup Gráfico": sinal_setup,
-                "Estratégia Sugerida de Opções": estrategia_sugerida
+                "Estratégia Sugerida": estrategia_sugerida,
+                "ticker_chave": ticker
             })
         except Exception as e:
             pass
 
     progresso.empty()
 
-    # --- VISUALIZAÇÃO INTERNA ---
     st.subheader("📋 Matriz de Estratégias para Opções B3")
-    
-    # Transforma em DataFrame para ordenar os melhores cenários no topo
     df_resultados = pd.DataFrame(resultados)
     if not df_resultados.empty:
-        # Coloca as ações com oportunidade ativa ou volatilidade extrema primeiro
         df_resultados = df_resultados.sort_values(by=["IV Rank"], ascending=False)
-        st.dataframe(df_resultados, use_container_width=True, hide_index=True)
+        df_exibicao = df_resultados.copy()
+        df_exibicao["IV Rank"] = df_exibicao["IV Rank"].map("{:.1f}%".format)
+        df_exibicao["IV Percentil"] = df_exibicao["IV Percentil"].map("{:.1f}%".format)
+        st.dataframe(df_exibicao.drop(columns=["ticker_chave"]), use_container_width=True, hide_index=True)
 
     st.markdown("---")
-    st.subheader("📊 Gráfico Técnico de Apoio")
-
+    
+    # --- ÁREA DO CHECKLIST OPERACIONAL ---
     if resultados:
-        acao_selecionada = st.selectbox("Selecione a Ação para Analisar:", [r["Acao (Ativo Objeto)"] for r in resultados])
-        ticker_completo = acao_selecionada + ".SA"
+        col_grafico, col_checklist = st.columns([1.2, 1.0])
+        
+        with col_grafico:
+            st.subheader("📊 Gráfico Técnico de Apoio")
+            acao_selecionada = st.selectbox("Selecione para Analisar & Validar:", [r["Acao (Ativo Objeto)"] for r in resultados])
+            
+            # Encontra a linha de dados correspondente
+            dados_linha = df_resultados[df_resultados["Acao (Ativo Objeto)"] == acao_selecionada].iloc[0]
+            ticker_chave = dados_linha["ticker_chave"]
+            iv_rank_ativo = dados_linha["IV Rank"]
 
-        if ticker_completo in dados_acoes:
-            df_grafico = dados_acoes[ticker_completo].tail(60)
-            
-            fig = go.Figure(data=[go.Candlestick(
-                x=df_grafico.index, open=df_grafico['Open'], high=df_grafico['High'],
-                low=df_grafico['Low'], close=df_grafico['Close'], name="Preço"
-            )])
-            
-            fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MME_9'], mode='lines', name='MME 9', line=dict(color='cyan', width=1.5)))
-            fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_21'], mode='lines', name='MMA 21', line=dict(color='lightgreen', width=1.5)))
-            fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_80'], mode='lines', name='MMA 80', line=dict(color='orange', width=2)))
-            fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_200'], mode='lines', name='MMA 200', line=dict(color='red', width=2.5)))
-            
-            fig.update_layout(xaxis_rangeslider_visible=False, template="plotly_dark")
-            st.plotly_chart(fig, use_container_width=True)
+            if ticker_chave in dados_acoes:
+                df_grafico = dados_acoes[ticker_chave].tail(60)
+                fig = go.Figure(data=[go.Candlestick(
+                    x=df_grafico.index, open=df_grafico['Open'], high=df_grafico['High'],
+                    low=df_grafico['Low'], close=df_grafico['Close'], name="Preço"
+                )])
+                fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MME_9'], mode='lines', name='MME 9', line=dict(color='cyan', width=1.5)))
+                fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_21'], mode='lines', name='MMA 21', line=dict(color='lightgreen', width=1.5)))
+                fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_80'], mode='lines', name='MMA 80', line=dict(color='orange', width=2)))
+                fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_200'], mode='lines', name='MMA 200', line=dict(color='red', width=2.5)))
+                fig.update_layout(xaxis_rangeslider_visible=False, template="plotly_dark", margin=dict(l=10, r=10, t=10, b=10))
+                st.plotly_chart(fig, use_container_width=True)
 
-# Executa o loop estável
+        with col_checklist:
+            st.subheader(f"📝 Checklist de Operação: {acao_selecionada}")
+            st.info("Valide os 10 mandamentos antes de abrir a operação no seu Home Broker:")
+            
+            tipo_op = st.radio("Tipo da Operação Planejada:", ["Compra (Call/Put Seca ou Débito)", "Venda (Lançamento Coberto ou Crédito)"], horizontal=True)
+            
+            chk1 = st.checkbox("1. DIREÇÃO: Tendência clara no Diário? (LTA ou LTB confirmada)")
+            chk2 = st.checkbox("2. ELLIOTT: Qual onda estamos? (Marque apenas se NÃO for onda 4, 5 ou B)")
+            chk3 = st.checkbox("3. SETUP: Padrão gráfico (9.1, 9.2, 9.3 ou PC) confirmado?")
+            
+            # 4. VALIDAÇÃO DE VOLATILIDADE AUTOMÁTICA
+            if tipo_op == "Compra (Call/Put Seca ou Débito)":
+                if iv_rank_ativo < 30:
+                    st.success(f"4. VOLATILIDADE: IV Rank atual ({iv_rank_ativo:.1f}%) está ABAIXO de 30. (Gatilho Perfeito!)")
+                    chk4 = True
+                else:
+                    st.error(f"4. VOLATILIDADE: IV Rank atual ({iv_rank_ativo:.1f}%) está ACIMA de 30! Alto risco de compressão de volatilidade.")
+                    chk4 = False
+            else:
+                if iv_rank_ativo > 70:
+                    st.success(f"4. VOLATILIDADE: IV Rank atual ({iv_rank_ativo:.1f}%) está ACIMA de 70. (Gatilho Perfeito!)")
+                    chk4 = True
+                else:
+                    st.error(f"4. VOLATILIDADE: IV Rank atual ({iv_rank_ativo:.1f}%) está ABAIXO de 70! Prêmios baixos para coletar crédito.")
+                    chk4 = False
+
+            chk5 = st.checkbox("5. TEMPO (Vencimento): Se < 25 dias úteis para o vencimento, o seu setup gráfico é EXCELENTE?")
+            
+            if tipo_op == "Compra (Call/Put Seca ou Débito)":
+                chk6 = st.checkbox("6. DELTA: Entre 0.50 e 0.70 (Opção ATM ou ligeiramente ITM)?")
+                chk7 = st.checkbox("7. GAMMA: Positivo verificado? (Vai acelerar o seu prêmio a favor do movimento)")
+                chk8 = st.checkbox("8. VEGA: Positivo? (IV baixa inicial expandindo vai valorizar a sua opção)")
+            else:
+                chk6 = st.checkbox("6. DELTA: Entre 0.15 e 0.30 (Opção bem OTM)?")
+                chk7 = st.checkbox("7. GAMMA: Negativo controlado? (Fique atento para rolar ou sair se o delta subir rápido)")
+                chk8 = st.checkbox("8. VEGA: Negativo? (IV alta derretendo vai acelerar o seu lucro)")
+                
+            chk9 = st.checkbox("9. STOP: Valor máximo de perda aceitável definido em carteira antes de clicar?")
+            chk10 = st.checkbox("10. ALVO: Parciais e alvo final traçados matematicamente no gráfico?")
+
+            total_checados = sum([chk1, chk2, chk3, chk4, chk5, chk6, chk7, chk8, chk9, chk10])
+            
+            st.markdown("---")
+            if total_checados == 10:
+                st.balloons()
+                st.success(f"🚀 *OPERAÇÃO 100% VALIDADA (10/10):* Todos os critérios técnicos batem perfeitamente. Siga seu plano!")
+            elif total_checados >= 7:
+                st.warning(f"⚠️ *OPERAÇÃO DE RISCO MODERADO ({total_checados}/10):* Atenção dobrada nos itens não marcados.")
+            else:
+                st.error(f"❌ *TRADE REPROVADO ({total_checados}/10):* Fora dos parâmetros operacionais. Proteja seu capital!")
+
 loop_principal()
-st.success("Scanner de Opções rodando! Oportunidades estruturadas sendo enviadas ao Telegram.")
+st.success("Scanner & Checklist Operacional sincronizados com sucesso!")
