@@ -7,17 +7,18 @@ import requests
 import time
 
 # =====================================================================
-# CONFIGURAÇÃO DO TELEGRAM
+# CONFIGURAÇÃO DO TELEGRAM (CORRIGIDA)
 # =====================================================================
-TOKEN_TELEGRAM = "8811939851:AAFK5KsKWEzfn2vU7WuHtK"
-ID_TELEGRAM = "971501251"
+TOKEN_TELEGRAM = "8811939851:AAFK5KsKWEzfn2vU7WuHtK"  # Seu Token ativo
+ID_TELEGRAM = "971501251"                             # Seu ID ativo
 # =====================================================================
 
 def enviar_alerta_telegram(mensagem):
-    """Função automática que dispara o alerta para o Telegram"""
+    """Função automática que dispara o alerta corrigido para o Telegram"""
     try:
         url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-        payload = {"chat_id": ID_TELEGRAM, "text": message, "parse_mode": "Markdown"}
+        # Correção realizada de 'message' para 'mensagem' para evitar erros de execução
+        payload = {"chat_id": ID_TELEGRAM, "text": mensagem, "parse_mode": "Markdown"}
         requests.post(url, json=payload)
         time.sleep(1.2)
     except Exception as e:
@@ -28,10 +29,11 @@ st.set_page_config(page_title="Terminal Quant - Scanner & Checklist", layout="wi
 st.title("🛡️ Terminal Quantitativo & Validador de Opções")
 st.caption("Filtros automáticos baseados em IV Rank/Setups, LTA/LTB Automáticas e Ondas de Elliott.")
 
+# Mecanismo de estado para controle de alertas
 if "alertas_enviados" not in st.session_state:
     st.session_state.alertas_enviados = {}
 
-def detectar_pivots(df, window=5):
+def detectar_pivots(df, window=4):
     """Detecta Topos e Fundos relativos no dataframe para traçar Elliott e LTA/LTB"""
     df = df.copy()
     df['Topo'] = False
@@ -50,6 +52,7 @@ def detectar_pivots(df, window=5):
 
 @st.fragment(run_every=300)
 def loop_principal():
+    # Tickers corrigidos em minúsculo para evitar o erro 'possibly delisted' do Yahoo Finance
     carteira = [
         "abev3.sa", "alos3.sa", "alpa4.sa", "arzz3.sa", "asai3.sa", "azul4.sa", "b3sa3.sa", 
         "bbas3.sa", "bbdc3.sa", "bbdc4.sa", "bbse3.sa", "beef3.sa", "bpac11.sa", "brap4.sa", 
@@ -80,14 +83,14 @@ def loop_principal():
                 continue
             dados_acoes[ticker] = df
             
-            # MME e MMA
+            # --- DIMENSÕES DE PREÇO ---
             df['MME_9'] = df['Close'].ewm(span=9, adjust=False).mean()
             df['MMA_21'] = df['Close'].rolling(window=21).mean()
             df['MMA_80'] = df['Close'].rolling(window=80).mean()
             df['MMA_200'] = df['Close'].rolling(window=200).mean()
             ultimo_preço = df['Close'].iloc[-1]
             
-            # Volatilidade
+            # --- CÁLCULO DA VOLATILIDADE HISTÓRICA ---
             df['Retornos'] = df['Close'].pct_change()
             df['Vol_21d'] = df['Retornos'].rolling(window=21).std() * np.sqrt(252) * 100
             
@@ -102,11 +105,16 @@ def loop_principal():
             iv_rank = ((iv_atual - iv_minimo) / (iv_maximo - iv_minimo)) * 100 if iv_maximo != iv_minimo else 0.0
             iv_percentil = ((historico_vol < iv_atual).sum() / 252) * 100
             
-            # Setups
+            # --- SCANNER DE SETUPS TÉCNICOS ---
             direcao_mercado = "Neutro"
             sinal_setup = "Aguardando Padrão"
-            c, o, h, l = df['Close'].values, df['Open'].values, df['High'].values, df['Low'].values
-            mme9, mma21 = df['MME_9'].values, df['MMA_21'].values
+            
+            c = df['Close'].values
+            o = df['Open'].values
+            h = df['High'].values
+            l = df['Low'].values
+            mme9 = df['MME_9'].values
+            mma21 = df['MMA_21'].values
             
             if mme9[-1] > mme9[-2] and mme9[-2] <= mme9[-3]:
                 sinal_setup = "9.1 COMPRA"
@@ -129,9 +137,10 @@ def loop_principal():
                     sinal_setup = "PC VENDA"
                     direcao_mercado = "Baixa"
 
-            # Estratégias sugeridas
+            # --- ESTRATÉGIAS ---
             estrategia_sugerida = "Aguardar Oportunidade"
             cor_alerta = "⚪"
+
             if iv_rank >= 70:
                 estrategia_sugerida = "💎 Trava de Alta com Put (Crédito)" if direcao_mercado == "Alta" else "💎 Trava de Baixa com Call (Crédito)" if direcao_mercado == "Baixa" else "💎 Venda Volatilidade (Iron Condor)"
                 cor_alerta = "🟢" if direcao_mercado == "Alta" else "🔴" if direcao_mercado == "Baixa" else "🔵"
@@ -142,9 +151,14 @@ def loop_principal():
                 estrategia_sugerida = "📈 Call Spread (Trava de Alta)" if direcao_mercado == "Alta" else "📉 Put Spread (Trava de Baixa)"
 
             resultados.append({
-                "Sinal": cor_alerta, "Acao (Ativo Objeto)": ticker.replace('.sa', '').upper(),
-                "Preco Atual": f"R$ {ultimo_preço:.2f}", "IV Rank": iv_rank, "IV Percentil": iv_percentil,
-                "Setup Gráfico": sinal_setup, "Estratégia Sugerida": estrategia_sugerida, "ticker_chave": ticker
+                "Sinal": cor_alerta, 
+                "Acao (Ativo Objeto)": ticker.replace('.sa', '').upper(),
+                "Preco Atual": f"R$ {ultimo_preço:.2f}", 
+                "IV Rank": iv_rank, 
+                "IV Percentil": iv_percentil,
+                "Setup Gráfico": sinal_setup, 
+                "Estratégia Sugerida": estrategia_sugerida, 
+                "ticker_chave": ticker
             })
         except Exception:
             pass
@@ -174,7 +188,6 @@ def loop_principal():
             iv_rank_ativo = dados_linha["IV Rank"]
 
             if ticker_chave in dados_acoes:
-                # Pegamos os dados e rodamos o algoritmo de pivots
                 df_completo = dados_acoes[ticker_chave]
                 df_pivots = detectar_pivots(df_completo, window=4)
                 df_grafico = df_pivots.tail(60).copy()
@@ -184,32 +197,32 @@ def loop_principal():
                     low=df_grafico['Low'], close=df_grafico['Close'], name="Preço"
                 )])
                 
-                # Desenhar as Médias Móveis
+                # Linhas das Médias Móveis
                 fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MME_9'], mode='lines', name='MME 9', line=dict(color='cyan', width=1.2)))
                 fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_21'], mode='lines', name='MMA 21', line=dict(color='lightgreen', width=1.2)))
                 fig.add_trace(go.Scatter(x=df_grafico.index, y=df_grafico['MMA_200'], mode='lines', name='MMA 200', line=dict(color='red', width=2)))
 
-                # --- CÁLCULO DINÂMICO DE LTA / LTB ---
+                # --- TRAÇADO DINÂMICO DE LTA / LTB (MÍNIMO 2 PONTOS) ---
                 topos = df_grafico[df_grafico['Topo'] == True]
                 fundos = df_grafico[df_grafico['Fundo'] == True]
                 
-                # Se o preço está acima da MMA 21 = Viés de Alta (Desenhar LTA se houver 2 fundos ascendentes)
+                # LTA: Ativo acima da média de viés e com fundos ascendentes
                 if df_grafico['Close'].iloc[-1] >= df_grafico['MMA_21'].iloc[-1] and len(fundos) >= 2:
                     for i in range(len(fundos) - 1):
                         f1, f2 = fundos.iloc[i], fundos.iloc[i+1]
-                        if f2['Low'] > f1['Low']: # Fundos ascendentes confirmados
+                        if f2['Low'] > f1['Low']:
                             fig.add_trace(go.Scatter(
                                 x=[fundos.index[i], fundos.index[i+1], df_grafico.index[-1]],
                                 y=[f1['Low'], f2['Low'], f2['Low'] + (f2['Low'] - f1['Low']) * 1.5],
                                 mode='lines', name='LTA', line=dict(color='lightgreen', width=2.5, dash='dash')
                             ))
-                            break # Desenha a LTA mais expressiva e para
+                            break
                             
-                # Se o preço está abaixo da MMA 21 = Viés de Baixa (Desenhar LTB se houver 2 topos descendentes)
+                # LTB: Ativo abaixo da média de viés e com topos descendentes
                 elif df_grafico['Close'].iloc[-1] < df_grafico['MMA_21'].iloc[-1] and len(topos) >= 2:
                     for i in range(len(topos) - 1):
                         t1, t2 = topos.iloc[i], topos.iloc[i+1]
-                        if t2['High'] < t1['High']: # Topos descendentes confirmados
+                        if t2['High'] < t1['High']:
                             fig.add_trace(go.Scatter(
                                 x=[topos.index[i], topos.index[i+1], df_grafico.index[-1]],
                                 y=[t1['High'], t2['High'], t2['High'] - (t1['High'] - t2['High']) * 1.5],
@@ -217,8 +230,7 @@ def loop_principal():
                             ))
                             break
 
-                # --- PROJEÇÃO AUTOMÁTICA DAS ONDAS DE ELLIOTT (1,2,3,4,5, A,B,C) ---
-                # Mescla e ordena todos os pivots encontrados cronologicamente
+                # --- RÓTULOS AUTOMÁTICOS DAS ONDAS DE ELLIOTT ---
                 pivots_cronologicos = df_grafico[(df_grafico['Topo'] == True) | (df_grafico['Fundo'] == True)].sort_index()
                 
                 rotulos_elliott = ['1', '2', '3', '4', '5', 'A', 'B', 'C']
@@ -226,17 +238,15 @@ def loop_principal():
                 y_elliott = []
                 text_elliott = []
                 
-                # Associa sequencialmente os rótulos de Elliott aos pivots gerados pelo mercado
                 for idx_pivot, (data_hora, linha_pivot) in enumerate(pivots_cronologicos.tail(8).iterrows()):
                     if idx_pivot < len(rotulos_elliott):
                         label = rotulos_elliott[idx_pivot]
                         x_elliott.append(data_hora)
-                        # Se for número (onda impulsiva), plota o rótulo no Topo; se for letra (onda corretiva) ou fundo, ajusta posição
+                        # Posiciona os rótulos graficamente acima ou abaixo do pavio do candle
                         valor_y = linha_pivot['High'] * 1.015 if label in ['1', '3', '5', 'B'] else linha_pivot['Low'] * 0.985
                         y_elliott.append(valor_y)
                         text_elliott.append(f"<b>({label})</b>")
                 
-                # Adiciona a linha conectando as Ondas de Elliott
                 if x_elliott:
                     fig.add_trace(go.Scatter(
                         x=x_elliott, y=y_elliott, mode='lines+text+markers',
@@ -294,4 +304,4 @@ def loop_principal():
                 st.error(f"❌ *TRADE REPROVADO ({total_checados}/10):* Fora dos parâmetros operacionais.")
 
 loop_principal()
-st.success("Refinamento gráfico de tendências e Elliott injetado com sucesso!")
+st.success("Scanner, Alertas e Projeções Gráficas carregados com sucesso!")
